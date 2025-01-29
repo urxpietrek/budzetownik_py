@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-center my-4">Welcome to your Budget Dashboard</h2>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4 col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Cele Oszczędnościowe</h5>
+                    <ul class="list-group mb-3" id="savings-goals-list">
+                        {% for goal in goals %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span>{{ goal.name }}</span>
+                                    <br>
+                                    <span>{{ goal.saved_amount }} / {{ goal.target_amount }} PLN</span>
+                                </div>
+                                <form method="POST" action="{{ url_for('routes.delete_goal', goal_id=goal.id) }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">Usuń</button>
+                                </form>
+                            </div>
+                            <div class="progress mt-2" style="height: 20px;">
+                                <div 
+                                    class="progress-bar" 
+                                    role="progressbar" 
+                                    style="width: {{ (goal.saved_amount / goal.target_amount) * 100 }}%;"
+                                    aria-valuenow="{{ (goal.saved_amount / goal.target_amount) * 100 }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                    {{ ((goal.saved_amount / goal.target_amount) * 100) | round(1) }}%
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <form method="POST" action="{{ url_for('routes.add_goal') }}">
+                        <div class="mb-3">
+                            <label for="goal-name" class="form-label">Nazwa celu</label>
+                            <input type="text" class="form-control" id="goal-name" name="name" placeholder="np., Auto">
+                        </div>
+                        <div class="mb-3">
+                            <label for="goal-amount" class="form-label">Kwota docelowa</label>
+                            <input type="number" class="form-control" id="goal-amount" name="target_amount" placeholder="np., 20000" min="0">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Dodaj Cel</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Przeznacz środki na cel</h5>
+                    <form method="POST" action="{{ url_for('routes.allocate_to_goal') }}">
+                        <div class="mb-3">
+                            <label for="goal-selection" class="form-label">Wybierz cel</label>
+                            <select class="form-select" id="goal-selection" name="goal_id">
+                                {% for goal in goals %}
+                                <option value="{{ goal.id }}">{{ goal.name }} ({{ goal.saved_amount }} / {{ goal.target_amount }} PLN)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="allocation-amount" class="form-label">Kwota do alokacji</label>
+                            <input type="number" class="form-control" id="allocation-amount" name="amount" placeholder="np., 500" min="0">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Przeznacz środki</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kolumna Środkowa - Saldo i Wykres -->
+        <div class="col-lg-4 col-md-12 mb-4">
+            <div class="card text-center shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Twoje Saldo</h5>
+                    <h2 class="card-text text-primary">{{ user.balance }} PLN</h2>
+                    <form method="POST" action="{{ url_for('routes.add_balance') }}">
+                        <div class="input-group mt-3">
+                            <input type="number" class="form-control" name="amount" placeholder="Kwota" min="0">
+                            <button class="btn btn-success" type="submit">Dodaj do Salda</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kolumna Prawa - Koszty -->
+        <div class="col-lg-4 col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Dodaj Nowy Wydatek</h5>
+                    <form id="expense-form" method="POST" action="{{ url_for('routes.add_expense') }}">
+                        <div class="mb-3">
+                            <label for="expense-category" class="form-label">Rodzaj Wydatków</label>
+                            <select class="form-select" id="expense-category" name="category" onchange="toggleCustomCategory()">
+                                <option value="Groceries">Zakupy</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Entertainment">Rozrywka</option>
+                                <option value="Utilities">Usługi komunalne</option>
+                                <option value="Other">Inne</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="custom-category-container" style="display: none;">
+                            <label for="custom-category" class="form-label">Custom Category</label>
+                            <input type="text" class="form-control" id="custom-category" name="custom_category" placeholder="Enter custom category">
+                        </div>
+                        <div class="mb-3">
+                            <label for="expense-amount" class="form-label">Koszt</label>
+                            <input type="float" class="form-control" id="expense-amount" name="amount" placeholder="np., 12.50">
+                        </div>
+                        <div class="mb-3">
+                            <label for="expense-date" class="form-label">Data</label>
+                            <input type="date" class="form-control" id="expense-date" name="date" placeholder="mm/dd/yyyy">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Dodaj</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Wydatki</h5>
+                    <ul class="list-group" id="expense-list">
+                        {% for expense in expenses %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ expense.category }} - {{ expense.amount }} PLN ({{ expense.date }})
+                            <form method="POST" action="{{ url_for('routes.delete_expense', expense_id=expense.id) }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Usuń</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6 col-md-12 mt-4">
+                <div class="card shadow">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Expenses by Category (Pie Chart)</h5>
+                        <img src="data:image/png;base64,{{ chart_pie }}" alt="Pie Chart" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12 mt-4">
+                <div class="card shadow">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Monthly Expenses (Bar Chart)</h5>
+                        <img src="data:image/png;base64,{{ chart_bar }}" alt="Bar Chart" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCustomCategory() {
+        const categorySelect = document.getElementById('expense-category');
+        const customCategoryContainer = document.getElementById('custom-category-container');
+        customCategoryContainer.style.display = categorySelect.value === 'Other' ? 'block' : 'none';
+    }
+</script>
+
+<a href="{{ url_for('routes.logout') }}" class="btn btn-danger mt-3">Logout</a>
+{% endblock %}
