@@ -11,7 +11,7 @@ Founders:
 Pobranie repozytorium
 ```
 git init
-git pull https://github.com/urxpietrek/python_project_site.git
+git pull https://github.com/urxpietrek/budzetownik_py
 ```
 
 Linux/macos
