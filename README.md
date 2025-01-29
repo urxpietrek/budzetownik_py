@@ -1,6 +1,10 @@
 # Projekt na zaliczenie
 
 Aplikacja Webowa służąca do kontrolowania wydatków oraz oszczędzania.
+Stworzona jako zaliczenie z przedmiotu `Python w praktyce - web i deep learning `.
+
+Founders:
+@urxpietrek, @gierlaak, @KKarolina4
 
 ## Zainicjalizowanie projektu
 
